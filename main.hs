@@ -8,6 +8,7 @@ data Proposition = Const Bool
     | Disyuncion (Proposition, Proposition)
     | Implicacion (Proposition, Proposition)
     | Equivalencia (Proposition, Proposition)
+    deriving Show
 
 
 -- / / Proposiciones Prueba
@@ -105,8 +106,6 @@ evalProp n val_list = case n of
 
 -- / / / taut (if evalProp == True para todos los valores posibles) / / / 
 
--- ---> Mostrar Formula <---
-
 tautAux :: Proposition -> [[Bool]] -> [String] -> Int -> IO ()
 tautAux n full_list varNames index = do
     let list = full_list !! index
@@ -120,6 +119,7 @@ tautAux n full_list varNames index = do
 
 taut :: Proposition -> IO ()
 taut n = do
+    print n
     let varNames = vars n
     let full_list = gen_bools varNames
     tautAux n full_list varNames (length full_list -1)
