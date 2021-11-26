@@ -200,86 +200,39 @@ fnd n = do
 
 -- / / / bonitaAux (print) / / / 
 
+-- Paréntesis al lado que asocian si la precedencia de ese lado es menor a la del caso actual
 
 bonitaAux :: Proposition -> [Char]
 bonitaAux n = case n of
-    (Const _) -> ""
+    (Const c) -> if c then "True" else "False"
     (Variable v) -> v
 
     (Negacion p) ->  case p of 
-        (Variable v) -> "~" ++ bonitaAux p
+        (Variable _) -> "~" ++ bonitaAux p
         _ -> "~(" ++ bonitaAux p ++ ")"
 
     -- bonitaAux p1 ++ " /\\ " ++ bonitaAux p2
     (Conjuncion (p1, p2)) -> case p1 of 
-        (Variable v) -> bonitaAux p1 ++ " /\\ " 
-            ++ case p2 of 
-                (Variable v) -> bonitaAux p2
-                (Negacion p) -> bonitaAux p2
-                _ -> "(" ++ bonitaAux p2 ++ ")"
-
-        _ -> "(" ++ bonitaAux p1 ++ ") /\\ "
-            ++ case p2 of 
-                (Variable v) -> bonitaAux p2
-                (Negacion p) -> bonitaAux p2
-                _ -> "(" ++ bonitaAux p2 ++ ")"
+        (Variable _) -> bonitaAux p1 ++ " /\\ " ++ bonitaAux p2
+        (Negacion _) -> bonitaAux p1 ++ " /\\ " ++ bonitaAux p2
+        (Conjuncion (_, _)) -> bonitaAux p1 ++ " /\\ " ++ bonitaAux p2
+        _ -> "(" ++bonitaAux p1 ++ ") /\\ " ++ bonitaAux p2
 
     -- bonitaAux p1 ++ " \\/ "++ bonitaAux p2
-    (Disyuncion (p1, p2)) -> case p1 of 
-        (Variable v) -> bonitaAux p1 ++ " \\/ " 
-            ++ case p2 of 
-                (Variable v) -> bonitaAux p2
-                (Negacion p) -> bonitaAux p2
-                (Conjuncion (px, py)) -> bonitaAux p2
-                _ -> "(" ++ bonitaAux p2 ++ ")"
+    (Disyuncion (p1, p2)) -> case p1 of
+        (Variable _) -> bonitaAux p1 ++ " \\/ "++ bonitaAux p2
+        (Negacion _) -> bonitaAux p1 ++ " \\/ "++ bonitaAux p2
+        (Conjuncion (_, _)) -> bonitaAux p1 ++ " \\/ "++ bonitaAux p2
+        (Disyuncion (_, _)) -> bonitaAux p1 ++ " \\/ "++ bonitaAux p2
+        _ -> "(" ++ bonitaAux p1 ++ ") \\/ " ++ bonitaAux p2
 
-        _ -> "(" ++ bonitaAux p1 ++ ") \\/ "
-            ++ case p2 of 
-                (Variable v) -> bonitaAux p2
-                (Negacion p) -> bonitaAux p2
-                (Conjuncion (px, py)) -> bonitaAux p2
-                _ -> "(" ++ bonitaAux p2 ++ ")"
-
-    
     -- bonitaAux p1 ++ " => "++ bonitaAux p2
-    (Implicacion (p1, p2)) -> case p1 of 
-        (Variable v) -> bonitaAux p1 ++ " => " 
-            ++ case p2 of 
-                (Variable v) -> bonitaAux p2
-                (Negacion p) -> bonitaAux p2
-                (Conjuncion (px, py)) -> bonitaAux p2
-                (Disyuncion (px, py)) -> bonitaAux p2
-                _ -> "(" ++ bonitaAux p2 ++ ")"
-
-        _ -> "(" ++ bonitaAux p1 ++ ") => "
-            ++ case p2 of 
-                (Variable v) -> bonitaAux p2
-                (Negacion p) -> bonitaAux p2
-                (Conjuncion (px, py)) -> bonitaAux p2
-                (Disyuncion (px, py)) -> bonitaAux p2
-                _ -> "(" ++ bonitaAux p2 ++ ")"
+    (Implicacion (p1, p2)) -> case p1 of -- >> Derecha << --
+        (Equivalencia (_, _)) -> bonitaAux p1 ++ " => (" ++ bonitaAux p2 ++ ")"
+        _ -> bonitaAux p1 ++ " => " ++ bonitaAux p2 
     
     -- bonitaAux p1 ++ " <=> "++ bonitaAux p2
-    (Equivalencia (p1, p2)) -> case p1 of 
-        (Variable v) -> bonitaAux p1 ++ " <=> " 
-            ++ case p2 of 
-                (Variable v) -> bonitaAux p2
-                (Negacion p) -> bonitaAux p2
-                (Conjuncion (px, py)) -> bonitaAux p2
-                (Disyuncion (px, py)) -> bonitaAux p2
-                (Implicacion (px, py)) -> bonitaAux p2
-                _ -> "(" ++ bonitaAux p2 ++ ")"
-
-        _ -> "(" ++ bonitaAux p1 ++ ") <=> "
-            ++ case p2 of 
-                (Variable v) -> bonitaAux p2
-                (Negacion p) -> bonitaAux p2
-                (Conjuncion (px, py)) -> bonitaAux p2
-                (Disyuncion (px, py)) -> bonitaAux p2
-                (Implicacion (px, py)) -> bonitaAux p2
-                _ -> "(" ++ bonitaAux p2 ++ ")"
-
-        -- orden de precedencia
+    (Equivalencia (p1, p2)) -> bonitaAux p1 ++ " <=> "++ bonitaAux p2
 
 bonita :: Proposition -> IO ()
 bonita n = do 
