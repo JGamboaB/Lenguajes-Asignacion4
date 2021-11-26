@@ -1,6 +1,6 @@
 import Data.Set
-import Data.List ()
-import Distribution.Simple.Program.HcPkg (list)
+import Data.List () 
+import Data.Typeable
 
 data Proposition = Const Bool
     | Variable String
@@ -38,6 +38,8 @@ varsAux n = case n of
     (Disyuncion (p1, p2)) -> varsAux p1 ++ varsAux p2
     (Implicacion (p1, p2)) -> varsAux p1 ++ varsAux p2
     (Equivalencia (p1, p2)) -> varsAux p1 ++ varsAux p2
+
+-- Disyuncion (Conjuncion (Variable "p", Variable "q"), Variable "r")
 
 vars :: Proposition -> [String]
 vars n = uniq (varsAux n)
@@ -186,7 +188,7 @@ toDis :: [[(String, Bool)]] -> Proposition
 toDis list = do toDisAux list (length list -1)
 
 
--- / Forma Normal Disyuntiva 
+-- / / Forma Normal Disyuntiva 
 fnd :: Proposition -> Proposition
 fnd n = do
     let varNames = vars n
@@ -195,42 +197,91 @@ fnd n = do
     toDis min
 
 
-{- Comprobacion fdn
 
--- prop1
-minterms: [[("p",False),("q",False),("r",True)],[("p",False),("q",True),("r",True)],[("p",True),("q",False),("r",True)],[("p",True),("q",True),("r",False)],[("p",True),("q",True),("r",True)]]
--> p'q'r + p'qr + pq'r + pqr' + pqr
-
-res: Disyuncion (Disyuncion (Disyuncion (Disyuncion (Conjuncion (Conjuncion (Negacion (Variable "p"),Negacion (Variable "q")),Variable "r"),Conjuncion (Conjuncion (Negacion (Variable "p"),Variable "q"),Variable "r")),Conjuncion (Conjuncion (Variable "p",Negacion (Variable "q")),Variable "r")),Conjuncion (Conjuncion (Variable "p",Variable "q"),Negacion (Variable "r"))),Conjuncion (Conjuncion (Variable "p",Variable "q"),Variable "r"))
-
--- prop4
-
-minterms: [[("a",False),("b",False)],[("a",False),("b",True)],[("a",True),("b",False)],[("a",True),("b",True)]]
--> a'b' + a'b + ab' + ab
-
-res: Disyuncion (Disyuncion (Disyuncion (Conjuncion (Negacion (Variable "a"),Negacion (Variable "b")),Conjuncion (Negacion (Variable "a"),Variable "b")),Conjuncion (Variable "a",Negacion (Variable "b"))),Conjuncion (Variable "a",Variable "b"))
-
-Disyuncion (
-    Disyuncion (
-        Disyuncion (
-            Conjuncion (
-                Negacion (Variable "a"),
-                Negacion (Variable "b")
-            ),Conjuncion (
-                Negacion (Variable "a"),
-                Variable "b")
-        ),Conjuncion (
-            Variable "a",
-            Negacion (Variable "b")
-        )
-    ),Conjuncion (
-        Variable "a",
-        Variable "b"
-    )
-)
-
--}
+-- / / / bonitaAux (print) / / / 
 
 
+bonitaAux :: Proposition -> [Char]
+bonitaAux n = case n of
+    (Const _) -> ""
+    (Variable v) -> v
 
--- / / / bonita (print bonito?) / / / 
+    (Negacion p) ->  case p of 
+        (Variable v) -> "~" ++ bonitaAux p
+        _ -> "~(" ++ bonitaAux p ++ ")"
+
+    -- bonitaAux p1 ++ " /\\ " ++ bonitaAux p2
+    (Conjuncion (p1, p2)) -> case p1 of 
+        (Variable v) -> bonitaAux p1 ++ " /\\ " 
+            ++ case p2 of 
+                (Variable v) -> bonitaAux p2
+                (Negacion p) -> bonitaAux p2
+                _ -> "(" ++ bonitaAux p2 ++ ")"
+
+        _ -> "(" ++ bonitaAux p1 ++ ") /\\ "
+            ++ case p2 of 
+                (Variable v) -> bonitaAux p2
+                (Negacion p) -> bonitaAux p2
+                _ -> "(" ++ bonitaAux p2 ++ ")"
+
+    -- bonitaAux p1 ++ " \\/ "++ bonitaAux p2
+    (Disyuncion (p1, p2)) -> case p1 of 
+        (Variable v) -> bonitaAux p1 ++ " \\/ " 
+            ++ case p2 of 
+                (Variable v) -> bonitaAux p2
+                (Negacion p) -> bonitaAux p2
+                (Conjuncion (px, py)) -> bonitaAux p2
+                _ -> "(" ++ bonitaAux p2 ++ ")"
+
+        _ -> "(" ++ bonitaAux p1 ++ ") \\/ "
+            ++ case p2 of 
+                (Variable v) -> bonitaAux p2
+                (Negacion p) -> bonitaAux p2
+                (Conjuncion (px, py)) -> bonitaAux p2
+                _ -> "(" ++ bonitaAux p2 ++ ")"
+
+    
+    -- bonitaAux p1 ++ " => "++ bonitaAux p2
+    (Implicacion (p1, p2)) -> case p1 of 
+        (Variable v) -> bonitaAux p1 ++ " => " 
+            ++ case p2 of 
+                (Variable v) -> bonitaAux p2
+                (Negacion p) -> bonitaAux p2
+                (Conjuncion (px, py)) -> bonitaAux p2
+                (Disyuncion (px, py)) -> bonitaAux p2
+                _ -> "(" ++ bonitaAux p2 ++ ")"
+
+        _ -> "(" ++ bonitaAux p1 ++ ") => "
+            ++ case p2 of 
+                (Variable v) -> bonitaAux p2
+                (Negacion p) -> bonitaAux p2
+                (Conjuncion (px, py)) -> bonitaAux p2
+                (Disyuncion (px, py)) -> bonitaAux p2
+                _ -> "(" ++ bonitaAux p2 ++ ")"
+    
+    -- bonitaAux p1 ++ " <=> "++ bonitaAux p2
+    (Equivalencia (p1, p2)) -> case p1 of 
+        (Variable v) -> bonitaAux p1 ++ " <=> " 
+            ++ case p2 of 
+                (Variable v) -> bonitaAux p2
+                (Negacion p) -> bonitaAux p2
+                (Conjuncion (px, py)) -> bonitaAux p2
+                (Disyuncion (px, py)) -> bonitaAux p2
+                (Implicacion (px, py)) -> bonitaAux p2
+                _ -> "(" ++ bonitaAux p2 ++ ")"
+
+        _ -> "(" ++ bonitaAux p1 ++ ") <=> "
+            ++ case p2 of 
+                (Variable v) -> bonitaAux p2
+                (Negacion p) -> bonitaAux p2
+                (Conjuncion (px, py)) -> bonitaAux p2
+                (Disyuncion (px, py)) -> bonitaAux p2
+                (Implicacion (px, py)) -> bonitaAux p2
+                _ -> "(" ++ bonitaAux p2 ++ ")"
+
+        -- orden de precedencia
+
+bonita :: Proposition -> IO ()
+bonita n = do 
+    print n
+    putStrLn (bonitaAux n) 
