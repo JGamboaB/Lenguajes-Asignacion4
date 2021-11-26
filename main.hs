@@ -1,4 +1,4 @@
-import Data.Set ( fromList, toList )
+import Data.Set
 import Data.List ()
 
 data Proposition = Const Bool
@@ -128,11 +128,47 @@ taut n = do
 
 
 
--- / / / fnd (simplify?) / / / 
+-- / / / fnd: Forma Normal Disyuntiva (Consigo los miniterminos de cuando es true y se suman -> Escribirlo de forma Proposicion) / / / 
+-- OR of ANDs, a sum of products (* : and / + : or)
 
+getMinterms n full_list varNames index = do
+    let list = full_list !! index
+    let val_list = as_vals varNames list
+    if index == -1 -- End
+        then []
+        else if evalProp n val_list -- True, get val_list
+            then val_list : getMinterms n full_list varNames (index - 1)
+            else getMinterms n full_list varNames (index - 1) 
 
+-- Consigue una matriz, que cada variable dentro de cada lista es una multiplicacion/conjuncion/and y entre las listas es una suma/disyuncion/or
+
+fnd n = do
+    let varNames = vars n
+    let full_list = gen_bools varNames
+    getMinterms n full_list varNames (length full_list -1)
 
 
 -- / / / bonita (print bonito?) / / / 
 
 
+{-
+
+prop4 = Equivalencia (Equivalencia(Variable "a", Variable "b"), Conjuncion(Implicacion(Variable "a", Variable "b"), Implicacion(Variable "b", Variable "a"))) -- TAUTOLOGIA: https://www.ecured.cu/images/thumb/a/aa/Tautologia.png/260px-Tautologia.png
+
+Equivalencia (
+    Equivalencia(
+        Variable "a", 
+        Variable "b"
+    ), 
+    Conjuncion(
+        Implicacion(
+            Variable "a", 
+            Variable "b"), 
+        Implicacion(
+            Variable "b", 
+            Variable "a"
+        )
+    )
+)
+
+-}
